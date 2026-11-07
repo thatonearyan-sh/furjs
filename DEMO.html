@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>furjs — Live Showcase Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@900&family=Playfair+Display:ital,wght@0,900;1,900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07080d;
+      --panel: #11131a;
+      --border: #1e2233;
+      --text: #e8eaf0;
+      --gold: #d4af37;
+      --muted: #8a8ea6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 12px;
+      background: #1c2030;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--gold);
+    }
+    #stage {
+      width: 100%;
+      max-width: 960px;
+      height: 320px;
+      background: radial-gradient(circle at center, #111420 0%, #07080d 75%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      cursor: crosshair;
+    }
+    .controls {
+      width: 100%;
+      max-width: 960px;
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 14px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    input[type="text"] {
+      flex: 1;
+      min-width: 200px;
+      background: #090a10;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px 14px;
+      font-size: 16px;
+      border-radius: 8px;
+      font-family: inherit;
+    }
+    button {
+      background: #1a1e2e;
+      color: #fff;
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+    button:hover {
+      background: #272d45;
+      border-color: var(--gold);
+    }
+    button.active {
+      background: var(--gold);
+      color: #000;
+      border-color: var(--gold);
+    }
+    .preset-btn {
+      text-transform: capitalize;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>@thatonearyan/furjs</h1>
+    <div class="badge">v1.0.1 · Pure Canvas 2D · Zero Dependencies</div>
+  </header>
+
+  <div id="stage"></div>
+
+  <div class="controls">
+    <div class="row">
+      <input type="text" id="textInput" value="ARYAN" placeholder="Type any text or emoji..." />
+      <button id="updateBtn">Render Text</button>
+      <button id="morphBtn">✨ Morph (ARYAN ➔ KRONOS)</button>
+    </div>
+
+    <div class="row">
+      <span style="font-size:13px; color:var(--muted)">Luxury Presets:</span>
+      <button class="preset-btn active" data-p="royal-sable">Royal Sable</button>
+      <button class="preset-btn" data-p="black-panther">Black Panther</button>
+      <button class="preset-btn" data-p="snow-leopard">Snow Leopard</button>
+      <button class="preset-btn" data-p="cashmere-cream">Cashmere</button>
+      <button class="preset-btn" data-p="desert-caracal">Desert Caracal</button>
+      <button class="preset-btn" data-p="silver-fox">Silver Fox</button>
+      <button class="preset-btn" data-p="imperial-velvet">Imperial Velvet</button>
+    </div>
+
+    <div class="row">
+      <button id="windToggle">💨 Toggle Breeze</button>
+      <button id="breathingToggle">🫁 Toggle Breathing</button>
+      <button id="shockwaveBtn">💥 Trigger Shockwave</button>
+      <button id="exportBtn">📸 Save 4K PNG</button>
+    </div>
+  </div>
+
+  <div class="hint">
+    ✦ Move your mouse across the canvas to comb the fur strands · Click to trigger ripples
+  </div>
+
+  <script type="module">
+    import { createFur, canvasToPNG, downloadDataURL } from './dist/index.js';
+
+    let currentPreset = 'royal-sable';
+    let windActive = false;
+    let breathingActive = false;
+
+    // Initialize the engine on #stage
+    const fur = createFur('#stage', {
+      text: 'ARYAN',
+      font: 'Cinzel, serif',
+      preset: currentPreset,
+      interactive: 'repel',
+      stiffness: 0.22,
+      hairLength: 1.1,
+    });
+
+    window.fur = fur;
+
+    // Text update
+    const textInput = document.getElementById('textInput');
+    document.getElementById('updateBtn').addEventListener('click', () => {
+      const val = textInput.value.trim() || 'FUR';
+      fur.update({ text: val });
+    });
+
+    textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = textInput.value.trim() || 'FUR';
+        fur.update({ text: val });
+      }
+    });
+
+    // Preset selection
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPreset = btn.dataset.p;
+        fur.update({ preset: currentPreset });
+      });
+    });
+
+    // Morph demo
+    let morphed = false;
+    document.getElementById('morphBtn').addEventListener('click', () => {
+      const targetText = morphed ? 'ARYAN' : 'KRONOS';
+      const targetPreset = morphed ? 'royal-sable' : 'snow-leopard';
+      fur.morph(targetText, {
+        duration: 950,
+        preset: targetPreset,
+        easing: 'fur-spring'
+      });
+      textInput.value = targetText;
+      morphed = !morphed;
+      document.querySelectorAll('.preset-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.p === targetPreset);
+      });
+    });
+
+    // Wind toggle
+    document.getElementById('windToggle').addEventListener('click', () => {
+      windActive = !windActive;
+      fur.update({
+        wind: windActive ? { speed: 0.8, direction: 45, gustiness: 0.5 } : { speed: 0 }
+      });
+      document.getElementById('windToggle').classList.toggle('active', windActive);
+    });
+
+    // Breathing toggle
+    document.getElementById('breathingToggle').addEventListener('click', () => {
+      breathingActive = !breathingActive;
+      fur.update({ breathing: breathingActive });
+      document.getElementById('breathingToggle').classList.toggle('active', breathingActive);
+    });
+
+    // Shockwave
+    document.getElementById('shockwaveBtn').addEventListener('click', () => {
+      fur.triggerShockwave(fur.canvas.width / 2, fur.canvas.height / 2, 1.5);
+    });
+
+    // 4K PNG Export
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const dataUrl = await fur.exportPNG({ scale: 2, transparent: true });
+      downloadDataURL(dataUrl, 'fur-artwork.png');
+    });
+  </script>
+</body>
+</html>
